@@ -505,6 +505,34 @@ def get_dataset_iterator(phase, dataset, data_path):
         return next_element, init_op
 
 
+def postprocess_saliency_map_raw(saliency_map, target_size, eps=1e-7):
+    """This function resizes and crops a single saliency map to the original
+       dimensions of the input image. But the output is not encoded as JPEG.
+       The output will be kept as float32
+
+    Args:
+        saliency_map (tensor, float32): 3D tensor that holds the values of a
+                                        saliency map in the range from 0 to 1.
+        target_size (tensor, int32): 1D tensor that specifies the size to which
+                                     the saliency map is resized and cropped.
+
+    Returns:
+        tensor, str: A tensor of the saliency map encoded as a jpeg file.
+    """
+
+    
+
+    saliency_map = _resize_image(saliency_map, target_size, True)
+    saliency_map = _crop_image(saliency_map, target_size)
+    #saliency_map = tf.cast(saliency_map, tf.float32)
+    saliency_map = saliency_map + eps
+
+    saliency_map = saliency_map / tf.reduce_sum(saliency_map, axis=(0, 1), keep_dims=True)
+
+    return saliency_map
+
+
+
 def postprocess_saliency_map(saliency_map, target_size):
     """This function resizes and crops a single saliency map to the original
        dimensions of the input image. The output is then encoded as a jpeg

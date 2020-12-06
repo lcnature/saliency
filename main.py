@@ -38,9 +38,11 @@ def define_paths(current_path, args):
     history_path = results_path + "history/"
     images_path = results_path + "images/"
     ckpts_path = results_path + "ckpts/"
+    prob_path = results_path + "prob/"
 
     best_path = ckpts_path + "best/"
     latest_path = ckpts_path + "latest/"
+
 
     if args.phase == "train":
         if args.data not in data_path:
@@ -52,7 +54,8 @@ def define_paths(current_path, args):
         "images": images_path,
         "best": best_path,
         "latest": latest_path,
-        "weights": weights_path
+        "weights": weights_path,
+        "prob": prob_path
     }
 
     return paths
@@ -180,7 +183,7 @@ def test_model(dataset, paths, device):
                                            input_map={"input": input_images},
                                            return_elements=["output:0"])
 
-    jpeg = data.postprocess_saliency_map(predicted_maps[0],
+    resized_predicted_maps = data.postprocess_saliency_map_raw(predicted_maps[0],
                                          original_shape[0])
 
     print(">> Start testing with %s %s model..." % (dataset.upper(), device))
@@ -190,20 +193,20 @@ def test_model(dataset, paths, device):
 
         while True:
             try:
-                output_file, path = sess.run([jpeg, file_path])
+                shape, output_prob, path = sess.run([tf.shape(resized_predicted_maps), resized_predicted_maps, file_path])
             except tf.errors.OutOfRangeError:
                 break
-
+            print(shape)
             path = path[0][0].decode("utf-8")
 
             filename = os.path.basename(path)
             filename = os.path.splitext(filename)[0]
-            filename += ".jpeg"
+            filename += ".npy"
 
-            os.makedirs(paths["images"], exist_ok=True)
+            os.makedirs(paths["prob"], exist_ok=True)
 
-            with open(paths["images"] + filename, "wb") as file:
-                file.write(output_file)
+            np.save(paths["prob"] + filename, output_prob)
+
 
 
 def main():
