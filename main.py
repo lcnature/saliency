@@ -193,10 +193,10 @@ def test_model(dataset, paths, device):
 
         while True:
             try:
-                shape, output_prob, path = sess.run([tf.shape(resized_predicted_maps), resized_predicted_maps, file_path])
+                output_prob, path = sess.run([resized_predicted_maps, file_path])
             except tf.errors.OutOfRangeError:
                 break
-            print(shape)
+            
             path = path[0][0].decode("utf-8")
 
             filename = os.path.basename(path)
