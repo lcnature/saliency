@@ -167,7 +167,7 @@ def test_model(dataset, paths, device):
     """
 
     iterator = data.get_dataset_iterator("test", dataset, paths["data"])
-    if not paths.fixation is None:
+    if not paths['fixation'] is None:
         porXY, fields, image_sizes = utils.read_fixation(paths.fixation)
         n_frames = len(porXY)
         porXY = np.asarray(porXY)
