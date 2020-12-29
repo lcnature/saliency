@@ -33,6 +33,7 @@ def define_paths(current_path, args):
         data_path = args.path
     else:
         data_path = os.path.join(args.path, "")
+        base_path = os.path.basename(os.path.normpath(data_path))
     
     if len(args.fixation) > 0 and os.path.isfile(args.fixation):
         fixation_file = args.fixation
@@ -44,7 +45,7 @@ def define_paths(current_path, args):
     history_path = results_path + "history/"
     images_path = results_path + "images/"
     ckpts_path = results_path + "ckpts/"
-    prob_path = results_path + "prob/"
+    prob_path = results_path + "prob/base_path/"
 
     best_path = ckpts_path + "best/"
     latest_path = ckpts_path + "latest/"
@@ -229,11 +230,11 @@ def test_model(dataset, paths, device):
                 
             filename += ".npy"
 
-            os.makedirs(paths["prob"], exist_ok=True)
+            os.makedirs(os.path.sep.join(paths["prob"], dataset), exist_ok=True)
 
-            np.save(paths["prob"] + filename, output_prob)
+            np.save(os.path.sep.join(paths["prob"], dataset, filename), output_prob)
         if has_fixation:
-            with open(paths["prob"] + 'log_likelihood.pkl', 'wb') as file:
+            with open(os.path.sep.join(paths["prob"], dataset, 'log_likelihood.pkl'), 'wb') as file:
                 pickle.dump({'log_likelihood': log_likelihood, 'in_camera': in_camera},
                             protocol=pickle.DEFAULT_PROTOCOL)
                 
