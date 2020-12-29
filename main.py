@@ -61,7 +61,7 @@ def define_paths(current_path, args):
         "best": best_path,
         "latest": latest_path,
         "weights": weights_path,
-        "prob": prob_path
+        "prob": prob_path,
         "fixation": fixation_file
     }
 
