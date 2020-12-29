@@ -230,11 +230,11 @@ def test_model(dataset, paths, device):
                 
             filename += ".npy"
 
-            os.makedirs(os.path.sep.join(paths["prob"], dataset), exist_ok=True)
+            os.makedirs(os.path.sep.join([paths["prob"], dataset]), exist_ok=True)
 
-            np.save(os.path.sep.join(paths["prob"], dataset, filename), output_prob)
+            np.save(os.path.sep.join([paths["prob"], dataset, filename]), output_prob)
         if has_fixation:
-            with open(os.path.sep.join(paths["prob"], dataset, 'log_likelihood.pkl'), 'wb') as file:
+            with open(os.path.sep.join([paths["prob"], dataset, 'log_likelihood.pkl']), 'wb') as file:
                 pickle.dump({'log_likelihood': log_likelihood, 'in_camera': in_camera},
                             protocol=pickle.DEFAULT_PROTOCOL)
                 
