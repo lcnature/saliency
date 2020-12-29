@@ -31,6 +31,7 @@ def define_paths(current_path, args):
 
     if os.path.isfile(args.path):
         data_path = args.path
+        base_path = ''
     else:
         data_path = os.path.join(args.path, "")
         base_path = os.path.basename(os.path.normpath(data_path))
@@ -45,7 +46,7 @@ def define_paths(current_path, args):
     history_path = results_path + "history/"
     images_path = results_path + "images/"
     ckpts_path = results_path + "ckpts/"
-    prob_path = results_path + "prob/base_path/"
+    prob_path = results_path + "prob/" + base_path + "/"
 
     best_path = ckpts_path + "best/"
     latest_path = ckpts_path + "latest/"
@@ -170,6 +171,7 @@ def test_model(dataset, paths, device):
     if not paths['fixation'] is None:
         porXY, fields, image_sizes = utils.read_fixation(paths['fixation'])
         n_frames = len(porXY)
+        print(n_frames, ' fixation data points in total')
         porXY = np.asarray(porXY)
         in_camera = np.zeros(n_frames)
         log_likelihood = np.zeros(n_frames)
@@ -221,11 +223,11 @@ def test_model(dataset, paths, device):
             if has_fixation:
                 tmp = filename.split('_')
                 frame_idx = int(tmp[-1]) - 1
-                if porXY[frame_idx, 0] >= 1 and porXY[frame_idx, 0] <= image_sizes['world_cam_w'] \
+                if frame_idx < n_frames and porXY[frame_idx, 0] >= 1 and porXY[frame_idx, 0] <= image_sizes['world_cam_w'] \
                     and porXY[frame_idx, 1] >= 1 and porXY[frame_idx, 1] <= image_sizes['world_cam_h']:
                         in_camera[frame_idx] = 1
-                        log_likelihood[frame_idx] = np.log(output_prob[int(np.round(porXY[frame_idx, 0])),
-                                                                       int(np.round(porXY[frame_idx, 1]))])
+                        log_likelihood[frame_idx] = np.log(output_prob[int(np.round(porXY[frame_idx, 1] - 1)),
+                                                                       int(np.round(porXY[frame_idx, 0] - 1))])
                         
                 
             filename += ".npy"
@@ -235,7 +237,7 @@ def test_model(dataset, paths, device):
             np.save(os.path.sep.join([paths["prob"], dataset, filename]), output_prob)
         if has_fixation:
             with open(os.path.sep.join([paths["prob"], dataset, 'log_likelihood.pkl']), 'wb') as file:
-                pickle.dump({'log_likelihood': log_likelihood, 'in_camera': in_camera},
+                pickle.dump({'log_likelihood': log_likelihood, 'in_camera': in_camera}, file,
                             protocol=pickle.DEFAULT_PROTOCOL)
                 
 
