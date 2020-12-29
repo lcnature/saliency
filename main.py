@@ -9,6 +9,8 @@ import data
 import download
 import model
 import utils
+import pickle
+
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 tf.logging.set_verbosity(tf.logging.ERROR)
@@ -31,7 +33,11 @@ def define_paths(current_path, args):
         data_path = args.path
     else:
         data_path = os.path.join(args.path, "")
-
+    
+    if len(args.fixation) > 0 and os.path.isfile(args.fixation):
+        fixation_file = args.fixation
+    else:
+        fixation_file = None
     results_path = current_path + "/results/"
     weights_path = current_path + "/weights/"
 
@@ -56,6 +62,7 @@ def define_paths(current_path, args):
         "latest": latest_path,
         "weights": weights_path,
         "prob": prob_path
+        "fixation": fixation_file
     }
 
     return paths
@@ -159,6 +166,15 @@ def test_model(dataset, paths, device):
     """
 
     iterator = data.get_dataset_iterator("test", dataset, paths["data"])
+    if not paths.fixation is None:
+        porXY, fields, image_sizes = utils.read_fixation(paths.fixation)
+        n_frames = len(porXY)
+        porXY = np.asarray(porXY)
+        in_camera = np.zeros(n_frames)
+        log_likelihood = np.zeros(n_frames)
+        has_fixation = True
+    else:
+        has_fixation = False
 
     next_element, init_op = iterator
 
@@ -201,12 +217,26 @@ def test_model(dataset, paths, device):
 
             filename = os.path.basename(path)
             filename = os.path.splitext(filename)[0]
+            if has_fixation:
+                tmp = filename.split('_')
+                frame_idx = int(tmp[-1]) - 1
+                if porXY[frame_idx, 0] >= 1 and porXY[frame_idx, 0] <= image_sizes['world_cam_w'] \
+                    and porXY[frame_idx, 1] >= 1 and porXY[frame_idx, 1] <= image_sizes['world_cam_h']:
+                        in_camera[frame_idx] = 1
+                        log_likelihood[frame_idx] = np.log(output_prob[int(np.round(porXY[frame_idx, 0])),
+                                                                       int(np.round(porXY[frame_idx, 1]))])
+                        
+                
             filename += ".npy"
 
             os.makedirs(paths["prob"], exist_ok=True)
 
             np.save(paths["prob"] + filename, output_prob)
-
+        if has_fixation:
+            with open(paths["prob"] + 'log_likelihood.pkl', 'wb') as file:
+                pickle.dump({'log_likelihood': log_likelihood, 'in_camera': in_camera},
+                            protocol=pickle.DEFAULT_PROTOCOL)
+                
 
 
 def main():
@@ -233,6 +263,11 @@ def main():
                         choices=datasets_list, default=datasets_list[0],
                         help="define which dataset will be used for training \
                               or which trained model is used for testing")
+    
+    parser.add_argument("-f", "--fixation", metavar="FIXATION",
+                        default='',
+                        help="specify the csv file containing the fixation \
+                              information for each frame")
 
     parser.add_argument("-p", "--path", default=default_data_path,
                         help="specify the path where training data will be \

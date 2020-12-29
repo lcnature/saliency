@@ -171,3 +171,45 @@ class Progbar:
         print(valid_output, flush=True)
 
         self._flush()
+
+def read_fixation(file_name):
+    with open(file_name, 'r') as file:
+        all_text = file.read().splitlines()
+    resolution_read = False
+    fields_read = False
+    porXY = []
+    for line in all_text:
+        if not resolution_read and line.startswith('eye'):
+            words = line.split(' ')
+            if words[0] == 'eye' and words[1] == 'resolution:':
+                eye_cam_w, eye_cam_h = words[2].split('x')
+                world_cam_w, world_cam_h = words[5].split('x')
+                resolution_read = True
+                try:
+                    eye_cam_w = int(eye_cam_w)
+                    eye_cam_h = int(eye_cam_h)
+                    world_cam_w = int(world_cam_w)
+                    world_cam_h = int(world_cam_h)
+                except:
+                    print('extracting camera parameters:', line)
+                    raise()
+                continue
+
+        if not fields_read and resolution_read and line.startswith('recordFrameCount'):
+            fields = line.split(' ')
+            for loc, key in enumerate(fields):
+                if key == 'porX':
+                    indx = loc
+                if key == 'porY':
+                    indy = loc
+            fields_read = True
+            continue
+
+        if fields_read and resolution_read:
+            numbers = line.split(' ')
+            
+            if len(line) > 0:
+                porXY.append([float(numbers[indx]), float(numbers[indy])])
+    image_sizes = {'eye_cam_w':eye_cam_w, 'eye_cam_h':eye_cam_h,
+                  'world_cam_w':world_cam_w, 'world_cam_h':world_cam_h}
+    return porXY, fields, image_sizes
